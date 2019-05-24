@@ -11,7 +11,6 @@ import java.util.concurrent.Executors;
 
 class TCPServer implements CallBack {
 
-    @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
     private final List<ClientHandler> clientList;
     private Listener listener;
     private final ExecutorService e;
@@ -19,7 +18,7 @@ class TCPServer implements CallBack {
     TCPServer(int port) throws IOException {
         clientList = new ArrayList<>();
         this.listener = new Listener(port);
-        e= Executors.newSingleThreadExecutor();
+        e = Executors.newSingleThreadExecutor();
     }
 
     void start() {
@@ -38,8 +37,8 @@ class TCPServer implements CallBack {
         e.shutdown();
     }
 
-    public void broadcast(String message){
-        for(ClientHandler client:clientList){
+    public void broadcast(String message) {
+        for (ClientHandler client : clientList) {
             client.send(message);
         }
     }
@@ -47,7 +46,7 @@ class TCPServer implements CallBack {
 
     @Override
     public void onNewMessageArrived(String message, ClientHandler handler) {
-        e.execute(()->{
+        e.execute(() -> {
             synchronized (TCPServer.this) {
                 for (ClientHandler clientHandler : clientList) {
                     if (clientHandler != handler) {
@@ -60,12 +59,15 @@ class TCPServer implements CallBack {
 
     @Override
     public void closeClient(ClientHandler client) {
-        clientList.remove(client);
+        synchronized (this) {
+            clientList.remove(client);
+        }
     }
 
     private class Listener implements Runnable {
 
         private ServerSocket server;
+
         Listener(int port) throws IOException {
             server = new ServerSocket(port);
         }

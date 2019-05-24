@@ -1,7 +1,7 @@
 package Client;
 
-import UDP_TCP.Utils.Request;
-import UDP_TCP.Utils.Response;
+import Utils.Request;
+import Utils.Response;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
