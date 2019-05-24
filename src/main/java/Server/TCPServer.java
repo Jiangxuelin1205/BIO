@@ -26,7 +26,7 @@ class TCPServer implements CallBack {
         t.start();
     }
 
-    public void stop() throws IOException {
+    public void stop() {
         if (listener != null) {
             listener.exit();
         }
@@ -39,7 +39,7 @@ class TCPServer implements CallBack {
 
     public void broadcast(String message) {
         for (ClientHandler client : clientList) {
-            client.send(message);
+            client.write(message);
         }
     }
 
@@ -50,7 +50,7 @@ class TCPServer implements CallBack {
             synchronized (TCPServer.this) {
                 for (ClientHandler clientHandler : clientList) {
                     if (clientHandler != handler) {
-                        clientHandler.send(message);
+                        clientHandler.write(message);
                     }
                 }
             }
@@ -68,7 +68,7 @@ class TCPServer implements CallBack {
 
         private ServerSocket server;
 
-        Listener(int port) throws IOException {
+        Listener(int port) throws IOException {//服务器端开一个线程，进行监听
             server = new ServerSocket(port);
         }
 
@@ -83,8 +83,7 @@ class TCPServer implements CallBack {
                     synchronized (TCPServer.this) {
                         clientList.add(clientHandler);
                     }
-                    Thread t = new Thread(clientHandler);
-                    t.start();
+                    clientHandler.read();
 
                 } while (true);
             } catch (Exception e) {

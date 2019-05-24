@@ -1,6 +1,6 @@
 package Utils;
 
-import Client.InvalidPacketException;
+import CommunicateException.InvalidPacketException;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;

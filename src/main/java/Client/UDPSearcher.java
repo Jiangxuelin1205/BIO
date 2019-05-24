@@ -1,5 +1,6 @@
 package Client;
 
+import CommunicateException.InvalidPacketException;
 import Utils.Request;
 import Utils.Response;
 
@@ -20,9 +21,9 @@ class UDPSearcher {
             while (true) {
                 DatagramPacket response = receive(searcher);
                 ServerInfo serverInfo;
-                try{
-                    serverInfo=getServerInfo(response);
-                }catch (InvalidPacketException e){
+                try {
+                    serverInfo = getServerInfo(response);
+                } catch (InvalidPacketException e) {
                     continue;
                 }
                 return serverInfo;

@@ -1,4 +1,4 @@
-package Client;
+package CommunicateException;
 
  public class InvalidPacketException  extends Exception{
 

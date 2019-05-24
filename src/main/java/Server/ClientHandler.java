@@ -1,115 +1,103 @@
 package Server;
 
+import CommunicateException.AbnormalInterruptionException;
+import Utils.Close;
+
 import java.io.*;
 import java.net.Socket;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-class ClientHandler implements Runnable {
+
+class ClientHandler {
 
     private Socket client;
     private ReadHandler readHandler;
     private WriteHandler writeHandler;
-    private CountDownLatch c;
     private CallBack callBack;
 
-    ClientHandler(Socket client,CallBack callBack) {
+    ClientHandler(Socket client, CallBack callBack) throws IOException {
         this.client = client;
-        c = new CountDownLatch(2);
-        readHandler = new ReadHandler(client, c);
-        writeHandler = new WriteHandler(client, c);
-        this.callBack=callBack;
+        readHandler = new ReadHandler(client.getInputStream());//仅仅做初始化，还没有开启线程
+        writeHandler = new WriteHandler(client.getOutputStream());//仅仅初始化，还没有开启线程
+        this.callBack = callBack;
     }
 
-    @Override
-    public void run() {
-        System.out.println("新客户端的连接：" + client.getInetAddress() + " P:" + client.getPort());
-
-        try {
-            Thread read = new Thread(readHandler);
-            read.start();
-
-        } catch (Exception e) {
-            System.out.println("连接异常断开");
-        }
-
-        try {
-            c.await();
-            callBack.closeClient(this);
-            client.close();
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        System.out.println("客户端已退出：" + client.getInetAddress() +
-                " P:" + client.getPort());
-    }
-
-    void exit() throws IOException {
-        client.close();
-    }
-
-    void send(String message){
+    void write(String message) {
         writeHandler.send(message);
+    }
+
+    void read() {
+        Thread readThread = new Thread(readHandler);
+        readThread.start();
+    }
+
+    void exit() {
+
+        readHandler.exit();
+        writeHandler.exit();
+        Close.close(client);
+        callBack.closeClient(this);
+        System.out.println("客户端已经退出");
     }
 
     private class ReadHandler implements Runnable {
 
-        private Socket client;
-        private CountDownLatch c;
+        private InputStream inputStream;
 
-        ReadHandler(Socket client, CountDownLatch c) {
-            this.client = client;
-            this.c = c;
+        ReadHandler(InputStream inputStream) {
+            this.inputStream = inputStream;
         }
 
         @Override
         public void run() {
-            BufferedReader buffer = null;
             try {
-                buffer = new BufferedReader(new InputStreamReader(client.getInputStream()));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            while (true) {
-                try {
-                    assert buffer != null;
-                    String message = buffer.readLine();
-                    System.out.println(message);
-                    if (message.equalsIgnoreCase("bye")) {//如果收到的是“bye”，则服务器端关闭该客户端的输入流和输出流
+                InputStream inputStream = client.getInputStream();
+                BufferedReader socketInput = new BufferedReader(new InputStreamReader(inputStream));
+
+                String message;
+                while (true) {
+                    message = socketInput.readLine();
+                    if (message == null) {
+                        ClientHandler.this.exit();
+                        throw new AbnormalInterruptionException("客户端断开连接");
+                    }
+                    if (message.equalsIgnoreCase("bye")) {//如果从客户端获取的字符串是bye,则关闭当前的输入流和输出流
                         break;
                     }
-                    callBack.onNewMessageArrived(message,ClientHandler.this);
-                } catch (IOException e) {
-                    e.printStackTrace();
+                    System.out.println(message);
+                    callBack.onNewMessageArrived(message, ClientHandler.this);
                 }
-            }
-            try {
-                client.shutdownInput();
-                client.shutdownOutput();
-            } catch (IOException e) {
+                ClientHandler.this.exit();
+            } catch (IOException | AbnormalInterruptionException e) {
                 e.printStackTrace();
+            } finally {
+                Close.close(inputStream);
             }
-            c.countDown();
-            c.countDown();
+        }
+
+        void exit() {
+            Close.close(inputStream);
         }
     }
 
     private class WriteHandler {//不需要负责消息的来源，直接将消息进行转发
 
-        Socket client;
-        CountDownLatch c;
+        OutputStream outputStream;
         private final ExecutorService executorService;
 
-        WriteHandler(Socket client, CountDownLatch c) {
-            this.client = client;
-            this.c = c;
+        WriteHandler(OutputStream outputStream) {
+            this.outputStream = outputStream;
             executorService = Executors.newSingleThreadExecutor();
         }
 
         void send(String message) {
             executorService.execute(new Writer(message));
+        }
+
+        void exit() {
+            executorService.shutdown();
+            Close.close(outputStream);
         }
 
         class Writer implements Runnable {
@@ -123,7 +111,7 @@ class ClientHandler implements Runnable {
             @Override
             public void run() {
                 try {
-                    PrintStream output=new PrintStream(client.getOutputStream());
+                    PrintStream output = new PrintStream(client.getOutputStream());
                     output.println(message);
                 } catch (IOException e) {
                     e.printStackTrace();

@@ -1,6 +1,6 @@
 package Utils;
 
-import Client.InvalidPacketException;
+import CommunicateException.InvalidPacketException;
 import Server.ClientInfo;
 
 import java.net.DatagramPacket;

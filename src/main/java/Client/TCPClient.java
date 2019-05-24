@@ -1,15 +1,17 @@
 package Client;
 
+import Utils.Close;
+
 import java.io.*;
 import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 
 class TCPClient {
 
-    private boolean done = false;
+    private Socket socket;
 
     void link(ServerInfo serverInfo) throws IOException, InterruptedException {
-        Socket socket = new Socket(serverInfo.ip, serverInfo.port);
+        socket = new Socket(serverInfo.ip, serverInfo.port);
         CountDownLatch c = new CountDownLatch(2);
 
         System.out.println("客户端已经发起socket连接");
@@ -30,7 +32,8 @@ class TCPClient {
         }
 
         c.await();
-        socket.close();
+        //socket.close();
+        Close.close(socket);
         System.out.println("客户端已经退出");
     }
 
@@ -48,8 +51,8 @@ class TCPClient {
         public void run() {
             try {
                 BufferedReader serverInput = new BufferedReader(new InputStreamReader(server.getInputStream()));//从服务器返回
-                while (!done) {
-                    String echo = serverInput.readLine();
+                String echo;
+                while (!socket.isClosed() && (echo = serverInput.readLine()) != null) {
                     System.out.println(echo);
                 }
             } catch (IOException e) {
@@ -79,7 +82,6 @@ class TCPClient {
                     String message = consoleInput.readLine();
                     output.println(message);
                     if (message.equalsIgnoreCase("bye")) {
-                        done = true;
                         break;
                     }
                 }

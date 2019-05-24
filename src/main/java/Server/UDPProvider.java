@@ -1,6 +1,6 @@
 package Server;
 
-import Client.InvalidPacketException;
+import CommunicateException.InvalidPacketException;
 import Utils.Request;
 import Utils.Response;
 
