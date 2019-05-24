@@ -1,6 +1,5 @@
 package Server;
 
-import CommunicateException.AbnormalInterruptionException;
 import Utils.Close;
 
 import java.io.*;
@@ -56,12 +55,7 @@ class ClientHandler {
                 BufferedReader socketInput = new BufferedReader(new InputStreamReader(inputStream));
 
                 String message;
-                while (true) {
-                    message = socketInput.readLine();
-                    if (message == null) {
-                        ClientHandler.this.exit();
-                        throw new AbnormalInterruptionException("客户端断开连接");
-                    }
+                while ((message=socketInput.readLine())!=null) {
                     if (message.equalsIgnoreCase("bye")) {//如果从客户端获取的字符串是bye,则关闭当前的输入流和输出流
                         break;
                     }
@@ -69,7 +63,7 @@ class ClientHandler {
                     callBack.onNewMessageArrived(message, ClientHandler.this);
                 }
                 ClientHandler.this.exit();
-            } catch (IOException | AbnormalInterruptionException e) {
+            } catch (IOException e) {
                 e.printStackTrace();
             } finally {
                 Close.close(inputStream);

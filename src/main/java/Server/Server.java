@@ -8,7 +8,6 @@ public class Server {
 
         TCPServer server = new TCPServer(10001);
         server.start();
-
         UDPProvider.listen();
     }
 }
