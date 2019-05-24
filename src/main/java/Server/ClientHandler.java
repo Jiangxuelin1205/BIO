@@ -4,8 +4,6 @@ import Utils.Close;
 
 import java.io.*;
 import java.net.Socket;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 
 class ClientHandler {
@@ -78,19 +76,20 @@ class ClientHandler {
     private class WriteHandler {//不需要负责消息的来源，直接将消息进行转发
 
         OutputStream outputStream;
-        private final ExecutorService executorService;
 
         WriteHandler(OutputStream outputStream) {
             this.outputStream = outputStream;
-            executorService = Executors.newSingleThreadExecutor();
+
         }
 
         void send(String message) {
-            executorService.execute(new Writer(message));
+            Writer writer=new Writer(message+"\n");
+            Thread t=new Thread(writer);
+            t.start();
         }
 
         void exit() {
-            executorService.shutdown();
+
             Close.close(outputStream);
         }
 
